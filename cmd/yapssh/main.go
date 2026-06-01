@@ -24,7 +24,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return runTUI(nil)
+		return runServer(nil)
 	}
 	switch args[0] {
 	case "tui":
@@ -39,7 +39,7 @@ func run(args []string) error {
 		return nil
 	default:
 		if strings.HasPrefix(args[0], "-") {
-			return runTUI(args)
+			return runServer(args)
 		}
 		return fmt.Errorf("unknown command %q\n\nrun `yapssh help` for usage", args[0])
 	}
@@ -71,9 +71,9 @@ func runTUI(args []string) error {
 }
 
 func runServer(args []string) error {
-	fs := flag.NewFlagSet("yapssh serve", flag.ContinueOnError)
+	fs := flag.NewFlagSet("yapssh", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
-	listen := fs.String("listen", envOr("YAPSSH_LISTEN", "127.0.0.1:23234"), "SSH listen address")
+	listen := fs.String("listen", envOr("YAPSSH_LISTEN", ":23234"), "SSH listen address")
 	dataDir := fs.String("data", envOr("YAPSSH_DATA", chat.DefaultRoot()), "state directory")
 	roomName := fs.String("room", envOr("YAPSSH_ROOM", chat.DefaultRoomName), "room name")
 	hostKey := fs.String("host-key", "", "SSH host key path")
@@ -107,18 +107,19 @@ func envOr(key, fallback string) string {
 
 func printUsage() {
 	fmt.Println(`usage:
-  yapssh [--data DIR] [--room NAME] [--name NAME] [--id ID]
-  yapssh tui [--data DIR] [--room NAME] [--name NAME] [--id ID]
+  yapssh [--listen ADDR] [--data DIR] [--room NAME] [--host-key PATH]
   yapssh serve [--listen ADDR] [--data DIR] [--room NAME] [--host-key PATH]
+  yapssh tui [--data DIR] [--room NAME] [--name NAME] [--id ID]
 
 modes:
-  tui     run the chat TUI in the current terminal; use this for Tailscale SSH forced-command/shell setup
-  serve   run a small SSH server for terminal.shop-style direct SSH access
+  default run the SSH chat server; people who SSH into it see the room
+  serve   explicit alias for the default server mode
+  tui     local development client; not used for normal server operation
 
 environment:
   YAPSSH_DATA    state directory
   YAPSSH_ROOM    room name
-  YAPSSH_ID      stable user id for tui mode
-  YAPSSH_NAME    default display name for tui mode
-  YAPSSH_LISTEN  listen address for serve mode`)
+  YAPSSH_LISTEN  server listen address
+  YAPSSH_ID      stable user id for local tui mode
+  YAPSSH_NAME    default display name for local tui mode`)
 }
