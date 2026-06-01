@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -eu
+
+export YAPSSH_DATA="${YAPSSH_DATA:-/var/lib/yapssh}"
+export YAPSSH_ROOM="${YAPSSH_ROOM:-tailnet}"
+
+exec /usr/local/bin/yapssh shell

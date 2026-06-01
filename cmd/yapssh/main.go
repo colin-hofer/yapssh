@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -16,17 +17,22 @@ import (
 )
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	if err := run(filepath.Base(os.Args[0]), os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string) error {
+func run(program string, args []string) error {
+	if isChatShell(program) {
+		return runTUI(nil)
+	}
 	if len(args) == 0 {
 		return runServer(nil)
 	}
 	switch args[0] {
+	case "shell":
+		return runTUI(args[1:])
 	case "tui":
 		return runTUI(args[1:])
 	case "serve":
@@ -109,11 +115,13 @@ func printUsage() {
 	fmt.Println(`usage:
   yapssh [--listen ADDR] [--data DIR] [--room NAME] [--host-key PATH]
   yapssh serve [--listen ADDR] [--data DIR] [--room NAME] [--host-key PATH]
+  yapssh shell [--data DIR] [--room NAME] [--name NAME] [--id ID]
   yapssh tui [--data DIR] [--room NAME] [--name NAME] [--id ID]
 
 modes:
   default run the SSH chat server; people who SSH into it see the room
   serve   explicit alias for the default server mode
+  shell   login-shell mode for a dedicated chat Unix user
   tui     local development client; not used for normal server operation
 
 environment:
@@ -122,4 +130,13 @@ environment:
   YAPSSH_LISTEN  server listen address
   YAPSSH_ID      stable user id for local tui mode
   YAPSSH_NAME    default display name for local tui mode`)
+}
+
+func isChatShell(program string) bool {
+	switch program {
+	case "yapssh-chat-shell", "chat-shell":
+		return true
+	default:
+		return false
+	}
 }

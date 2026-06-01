@@ -59,11 +59,42 @@ The server creates a persistent host key at `<data>/ssh_host_rsa_key` unless `--
 
 ## Tailscale SSH Forced Command Alternative
 
-If you specifically want Tailscale SSH to keep managing port 22 and authentication, do not run the `yapssh` SSH server on port 22. Instead, configure the SSH user to run the local TUI command:
+If you specifically want Tailscale SSH to keep managing port 22 and authentication, do not run the `yapssh` SSH server on port 22. Instead, create a dedicated Unix user named `chat` whose login shell runs the TUI. Your normal admin SSH user keeps a normal shell.
+
+Install the binary and login-shell wrapper:
+
+```bash
+sudo install -m 755 ./yapssh /usr/local/bin/yapssh
+sudo install -m 755 scripts/yapssh-chat-shell /usr/local/bin/yapssh-chat-shell
+grep -qxF /usr/local/bin/yapssh-chat-shell /etc/shells || echo /usr/local/bin/yapssh-chat-shell | sudo tee -a /etc/shells
+```
+
+Create or update the `chat` user:
+
+```bash
+sudo mkdir -p /var/lib/yapssh
+if id chat >/dev/null 2>&1; then
+  sudo usermod --shell /usr/local/bin/yapssh-chat-shell chat
+else
+  sudo useradd --create-home --shell /usr/local/bin/yapssh-chat-shell chat
+fi
+sudo chown -R chat:chat /var/lib/yapssh
+```
+
+Make sure your Tailscale SSH policy allows people to connect to this VM as the SSH user `chat`, then test from another terminal:
+
+```bash
+ssh -t chat@<tailscale-hostname>
+```
+
+That drops only the `chat` user into the room. Your current admin user remains available for VM maintenance.
+
+If you are using OpenSSH instead of Tailscale SSH, an `sshd_config` `ForceCommand` for the `chat` user also works:
 
 ```text
-ForceCommand /usr/local/bin/yapssh tui --data /var/lib/yapssh --room tailnet
-PermitTTY yes
+Match User chat
+  ForceCommand /usr/local/bin/yapssh shell --data /var/lib/yapssh --room tailnet
+  PermitTTY yes
 ```
 
 That mode still drops users into the chat immediately, but the SSH server is Tailscale/OpenSSH, not `yapssh`.
