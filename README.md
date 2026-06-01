@@ -64,14 +64,19 @@ If you specifically want Tailscale SSH to keep managing port 22 and authenticati
 Install the binary and login-shell wrapper:
 
 ```bash
+scripts/install-chat-user.sh
+```
+
+The script builds `./yapssh`, installs `/usr/local/bin/yapssh`, installs `/usr/local/bin/yapssh-chat-shell`, registers the shell, creates or updates the `chat` user, and gives that user ownership of `/var/lib/yapssh`.
+
+Manual equivalent:
+
+```bash
+go build -buildvcs=false -o ./yapssh ./cmd/yapssh
 sudo install -m 755 ./yapssh /usr/local/bin/yapssh
 sudo install -m 755 scripts/yapssh-chat-shell /usr/local/bin/yapssh-chat-shell
 grep -qxF /usr/local/bin/yapssh-chat-shell /etc/shells || echo /usr/local/bin/yapssh-chat-shell | sudo tee -a /etc/shells
-```
 
-Create or update the `chat` user:
-
-```bash
 sudo mkdir -p /var/lib/yapssh
 if id chat >/dev/null 2>&1; then
   sudo usermod --shell /usr/local/bin/yapssh-chat-shell chat
