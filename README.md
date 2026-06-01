@@ -7,22 +7,26 @@ Running `yapssh` starts the server. It does not open the chat locally. People wh
 ## Build
 
 ```bash
-go build -buildvcs=false ./cmd/yapssh
+go build -buildvcs=false -o yapssh ./cmd/yapssh
 ```
 
 ## Run The Server
 
+Terminal.shop-style access means `yapssh` must be the SSH server answering the address and port you connect to.
+
 ```bash
-./yapssh --listen :23234 --data /var/lib/yapssh --room tailnet
+sudo ./yapssh --listen :22 --data /var/lib/yapssh --room tailnet
 ```
 
 Then connect from another terminal or machine:
 
 ```bash
-ssh -p 23234 chat@<tailscale-hostname>
+ssh chat@<tailscale-hostname>
 ```
 
 `yapssh serve` is an explicit alias for the default server mode.
+
+If you leave OpenSSH or Tailscale SSH answering port 22, `ssh <host>` will keep opening a normal shell. In that case either connect to the port where `yapssh` is actually listening, for example `ssh -p 23234 chat@<host>`, or move/disable the other SSH server for that address.
 
 Controls:
 
@@ -36,16 +40,33 @@ Controls:
 
 ## Tailscale SSH Setup
 
-Install and run `yapssh` as a long-lived process on the VM:
+Install and run `yapssh` as a long-lived process on the VM. For bare `ssh chat@<tailscale-hostname>` to enter the chat, `yapssh` must own port 22 on the Tailscale address:
 
 ```bash
 sudo install -m 755 ./yapssh /usr/local/bin/yapssh
 sudo mkdir -p /var/lib/yapssh
 sudo chown -R yapssh:yapssh /var/lib/yapssh
-/usr/local/bin/yapssh --listen :23234 --data /var/lib/yapssh --room tailnet
+sudo /usr/local/bin/yapssh --listen :22 --data /var/lib/yapssh --room tailnet
 ```
 
-The server creates a persistent host key at `<data>/ssh_host_rsa_key` unless `--host-key` is provided. Bind it to a tailnet-only interface or protect the port with Tailscale ACLs/firewall rules.
+Tailscale SSH cannot be configured to use a different port and claims port 22 on the Tailscale IP when enabled. If Tailscale SSH is enabled for this VM, it will answer `ssh <tailscale-hostname>` before `yapssh` can. Disable Tailscale SSH for this host or use a different `yapssh` port and connect with `ssh -p`:
+
+```bash
+sudo tailscale set --ssh=false
+```
+
+The server creates a persistent host key at `<data>/ssh_host_rsa_key` unless `--host-key` is provided. Bind it to a tailnet-only interface or protect the port with Tailscale ACLs/firewall rules. Running on port 22 usually requires root or `cap_net_bind_service`.
+
+## Tailscale SSH Forced Command Alternative
+
+If you specifically want Tailscale SSH to keep managing port 22 and authentication, do not run the `yapssh` SSH server on port 22. Instead, configure the SSH user to run the local TUI command:
+
+```text
+ForceCommand /usr/local/bin/yapssh tui --data /var/lib/yapssh --room tailnet
+PermitTTY yes
+```
+
+That mode still drops users into the chat immediately, but the SSH server is Tailscale/OpenSSH, not `yapssh`.
 
 ## Local Debug Client
 

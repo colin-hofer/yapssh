@@ -73,7 +73,7 @@ func runTUI(args []string) error {
 func runServer(args []string) error {
 	fs := flag.NewFlagSet("yapssh", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
-	listen := fs.String("listen", envOr("YAPSSH_LISTEN", ":23234"), "SSH listen address")
+	listen := fs.String("listen", envOr("YAPSSH_LISTEN", ":22"), "SSH listen address")
 	dataDir := fs.String("data", envOr("YAPSSH_DATA", chat.DefaultRoot()), "state directory")
 	roomName := fs.String("room", envOr("YAPSSH_ROOM", chat.DefaultRoomName), "room name")
 	hostKey := fs.String("host-key", "", "SSH host key path")

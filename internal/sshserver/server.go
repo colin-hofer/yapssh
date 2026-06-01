@@ -31,7 +31,7 @@ type Config struct {
 
 func Run(ctx context.Context, cfg Config) error {
 	if strings.TrimSpace(cfg.Listen) == "" {
-		cfg.Listen = "127.0.0.1:23234"
+		cfg.Listen = ":22"
 	}
 	if strings.TrimSpace(cfg.Room) == "" {
 		cfg.Room = chat.DefaultRoomName
